@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarContent, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Home, Plus, Map, User, MapPin, Calendar } from "lucide-react";
 
 interface Problem {
@@ -88,9 +88,9 @@ const HomeFeed = ({ onPostProblem, onViewProblem, onProfile }: HomeFeedProps) =>
             className="rounded-full p-2"
           >
             <Avatar className="w-8 h-8">
-              <AvatarContent className="bg-ncc-navy text-white">
+              <AvatarImage className="bg-ncc-navy text-white">
                 RC
-              </AvatarContent>
+              </AvatarImage>
               <AvatarFallback>RC</AvatarFallback>
             </Avatar>
           </Button>

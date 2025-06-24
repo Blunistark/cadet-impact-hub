@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarContent, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowDown, MapPin, Award, Calendar, Users } from "lucide-react";
 
 interface ProfileProps {
@@ -52,9 +52,9 @@ const Profile = ({ onBack }: ProfileProps) => {
         {/* Profile Header */}
         <div className="flex items-center space-x-4">
           <Avatar className="w-16 h-16">
-            <AvatarContent className="bg-white text-ncc-navy text-xl font-bold">
+            <AvatarImage className="bg-white text-ncc-navy text-xl font-bold">
               {cadetData.name.split(' ').map(n => n[0]).join('')}
-            </AvatarContent>
+            </AvatarImage>
             <AvatarFallback>RC</AvatarFallback>
           </Avatar>
           <div className="flex-1">
