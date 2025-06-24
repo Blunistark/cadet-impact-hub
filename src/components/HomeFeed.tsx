@@ -22,9 +22,10 @@ interface HomeFeedProps {
   onPostProblem: () => void;
   onViewProblem: (problem: Problem) => void;
   onProfile: () => void;
+  onMapView: () => void;
 }
 
-const HomeFeed = ({ onPostProblem, onViewProblem, onProfile }: HomeFeedProps) => {
+const HomeFeed = ({ onPostProblem, onViewProblem, onProfile, onMapView }: HomeFeedProps) => {
   const [activeTab, setActiveTab] = useState('home');
 
   const mockProblems: Problem[] = [
@@ -204,7 +205,10 @@ const HomeFeed = ({ onPostProblem, onViewProblem, onProfile }: HomeFeedProps) =>
           <Button 
             variant={activeTab === 'map' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('map')}
+            onClick={() => {
+              setActiveTab('map');
+              onMapView();
+            }}
             className="flex flex-col items-center gap-1"
           >
             <Map className="w-5 h-5" />

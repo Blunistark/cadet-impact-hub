@@ -5,9 +5,10 @@ import AuthForm from '@/components/AuthForm';
 import HomeFeed from '@/components/HomeFeed';
 import PostProblem from '@/components/PostProblem';
 import Profile from '@/components/Profile';
+import MapView from '@/components/MapView';
 import { useToast } from '@/hooks/use-toast';
 
-type AppState = 'welcome' | 'login' | 'register' | 'home' | 'post' | 'profile';
+type AppState = 'welcome' | 'login' | 'register' | 'home' | 'post' | 'profile' | 'map';
 
 const Index = () => {
   const [currentState, setCurrentState] = useState<AppState>('welcome');
@@ -25,7 +26,7 @@ const Index = () => {
     console.log('Auth data:', data);
     toast({
       title: currentState === 'login' ? 'Welcome back!' : 'Registration successful!',
-      description: 'You are now part of the Cadet Collective.',
+      description: 'You are now part of UDAAN NCC.',
     });
     setCurrentState('home');
   };
@@ -53,6 +54,10 @@ const Index = () => {
 
   const handleProfile = () => {
     setCurrentState('profile');
+  };
+
+  const handleMapView = () => {
+    setCurrentState('map');
   };
 
   const handleBack = () => {
@@ -94,6 +99,7 @@ const Index = () => {
             onPostProblem={handlePostProblem}
             onViewProblem={handleViewProblem}
             onProfile={handleProfile}
+            onMapView={handleMapView}
           />
         );
       case 'post':
@@ -106,6 +112,12 @@ const Index = () => {
       case 'profile':
         return (
           <Profile 
+            onBack={handleBack}
+          />
+        );
+      case 'map':
+        return (
+          <MapView 
             onBack={handleBack}
           />
         );

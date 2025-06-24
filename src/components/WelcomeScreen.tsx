@@ -22,10 +22,10 @@ const WelcomeScreen = ({ onLogin, onRegister }: WelcomeScreenProps) => {
         {/* Logo and Title */}
         <div className="mb-8">
           <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
-            <div className="text-2xl font-bold text-ncc-navy">CC</div>
+            <div className="text-2xl font-bold text-ncc-navy">UN</div>
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">
-            Cadet Collective
+            UDAAN NCC
           </h1>
           <p className="text-blue-100 text-lg">
             Unite. Serve. Transform.
