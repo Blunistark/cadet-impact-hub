@@ -6,14 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowDown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AuthFormProps {
   mode: 'login' | 'register';
-  onSubmit: (data: any) => void;
   onBack: () => void;
 }
 
-const AuthForm = ({ mode, onSubmit, onBack }: AuthFormProps) => {
+const AuthForm = ({ mode, onBack }: AuthFormProps) => {
+  const { signUp, signIn } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,10 +25,21 @@ const AuthForm = ({ mode, onSubmit, onBack }: AuthFormProps) => {
     institute: '',
     role: 'cadet'
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setLoading(true);
+
+    try {
+      if (mode === 'login') {
+        await signIn(formData.email, formData.password);
+      } else {
+        await signUp(formData);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const directorates = [
@@ -81,7 +93,6 @@ const AuthForm = ({ mode, onSubmit, onBack }: AuthFormProps) => {
                       placeholder="e.g., 1DG"
                       value={formData.unitCode}
                       onChange={(e) => setFormData({...formData, unitCode: e.target.value})}
-                      required
                     />
                   </div>
                   <div>
@@ -121,7 +132,6 @@ const AuthForm = ({ mode, onSubmit, onBack }: AuthFormProps) => {
                     placeholder="Your college/school name"
                     value={formData.institute}
                     onChange={(e) => setFormData({...formData, institute: e.target.value})}
-                    required
                   />
                 </div>
 
@@ -168,8 +178,9 @@ const AuthForm = ({ mode, onSubmit, onBack }: AuthFormProps) => {
               <Button 
                 type="submit" 
                 className="w-full bg-ncc-navy hover:bg-blue-800"
+                disabled={loading}
               >
-                {mode === 'login' ? 'Sign In' : 'Register'}
+                {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Register')}
               </Button>
               
               <Button 
@@ -177,6 +188,7 @@ const AuthForm = ({ mode, onSubmit, onBack }: AuthFormProps) => {
                 variant="ghost" 
                 className="w-full"
                 onClick={onBack}
+                disabled={loading}
               >
                 <ArrowDown className="w-4 h-4 mr-2 rotate-90" />
                 Back to Welcome

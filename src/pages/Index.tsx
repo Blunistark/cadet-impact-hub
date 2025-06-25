@@ -1,4 +1,6 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import WelcomeScreen from '@/components/WelcomeScreen';
 import AuthForm from '@/components/AuthForm';
 import HomeFeed from '@/components/HomeFeed';
@@ -6,22 +8,24 @@ import PostProblem from '@/components/PostProblem';
 import Profile from '@/components/Profile';
 import MapView from '@/components/MapView';
 import ANODashboard from '@/components/ANODashboard';
-import { useToast } from '@/hooks/use-toast';
 
 type AppState = 'welcome' | 'login' | 'register' | 'home' | 'post' | 'profile' | 'map' | 'ano-dashboard';
 
 const Index = () => {
   const [currentState, setCurrentState] = useState<AppState>('welcome');
-  const [userRole, setUserRole] = useState<'cadet' | 'ano'>('cadet');
-  const { toast } = useToast();
+  const { user, profile, loading } = useAuth();
 
-  const detectUserRole = (email: string): 'cadet' | 'ano' => {
-    // Detect ANO based on email patterns
-    if (email.includes('.ano@') || email.includes('ano.') || email.toLowerCase().includes('officer')) {
-      return 'ano';
+  useEffect(() => {
+    if (!loading) {
+      if (user && profile) {
+        // Redirect authenticated users to appropriate dashboard
+        setCurrentState(profile.role === 'ano' ? 'ano-dashboard' : 'home');
+      } else {
+        // Show welcome screen for unauthenticated users
+        setCurrentState('welcome');
+      }
     }
-    return 'cadet';
-  };
+  }, [user, profile, loading]);
 
   const handleLogin = () => {
     setCurrentState('login');
@@ -31,38 +35,8 @@ const Index = () => {
     setCurrentState('register');
   };
 
-  const handleAuthSubmit = (data: any) => {
-    console.log('Auth data:', data);
-    const role = detectUserRole(data.email);
-    setUserRole(role);
-    
-    toast({
-      title: currentState === 'login' ? 'Welcome back!' : 'Registration successful!',
-      description: role === 'ano' ? 'Welcome to ANO Portal' : 'You are now part of UDAAN NCC.',
-    });
-    
-    setCurrentState(role === 'ano' ? 'ano-dashboard' : 'home');
-  };
-
   const handlePostProblem = () => {
     setCurrentState('post');
-  };
-
-  const handlePostSubmit = (problemData: any) => {
-    console.log('Problem posted:', problemData);
-    toast({
-      title: 'Mission Created!',
-      description: 'Your problem has been posted and a new mission is now active.',
-    });
-    setCurrentState('home');
-  };
-
-  const handleViewProblem = (problem: any) => {
-    console.log('Viewing problem:', problem);
-    toast({
-      title: 'Joined Mission!',
-      description: `You have joined the mission: ${problem.title}`,
-    });
   };
 
   const handleProfile = () => {
@@ -79,9 +53,17 @@ const Index = () => {
     } else if (currentState === 'ano-dashboard') {
       setCurrentState('welcome');
     } else {
-      setCurrentState(userRole === 'ano' ? 'ano-dashboard' : 'home');
+      setCurrentState(profile?.role === 'ano' ? 'ano-dashboard' : 'home');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-ncc-navy to-blue-700 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   const renderCurrentScreen = () => {
     switch (currentState) {
@@ -96,7 +78,6 @@ const Index = () => {
         return (
           <AuthForm 
             mode="login"
-            onSubmit={handleAuthSubmit}
             onBack={handleBack}
           />
         );
@@ -104,7 +85,6 @@ const Index = () => {
         return (
           <AuthForm 
             mode="register"
-            onSubmit={handleAuthSubmit}
             onBack={handleBack}
           />
         );
@@ -118,7 +98,6 @@ const Index = () => {
         return (
           <HomeFeed 
             onPostProblem={handlePostProblem}
-            onViewProblem={handleViewProblem}
             onProfile={handleProfile}
             onMapView={handleMapView}
           />
@@ -126,7 +105,6 @@ const Index = () => {
       case 'post':
         return (
           <PostProblem 
-            onSubmit={handlePostSubmit}
             onBack={handleBack}
           />
         );

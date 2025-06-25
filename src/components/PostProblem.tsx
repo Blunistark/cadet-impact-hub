@@ -7,13 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDown, Camera, MapPin, Plus } from "lucide-react";
+import { useProblems } from "@/hooks/useProblems";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostProblemProps {
-  onSubmit: (problemData: any) => void;
   onBack: () => void;
 }
 
-const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
+const PostProblem = ({ onBack }: PostProblemProps) => {
+  const { createProblem } = useProblems();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [problemData, setProblemData] = useState({
     title: '',
     description: '',
@@ -28,9 +32,29 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
     'Health', 'Community', 'Traffic', 'Waste', 'Digital', 'Youth'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(problemData);
+    setLoading(true);
+
+    try {
+      const { error } = await createProblem(problemData);
+      
+      if (error) {
+        toast({
+          title: 'Error creating mission',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Mission Created!',
+          description: 'Your problem has been submitted for review.',
+        });
+        onBack();
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addTag = (tag: string) => {
@@ -66,6 +90,7 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
             size="sm"
             onClick={onBack}
             className="mr-3"
+            disabled={loading}
           >
             <ArrowDown className="w-4 h-4 rotate-90" />
           </Button>
@@ -83,33 +108,31 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Photo Upload */}
+              {/* Photo Upload Placeholder */}
               <div>
                 <Label>Add Photos</Label>
                 <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">Tap to add photos of the problem</p>
-                  <Button variant="outline" className="mt-2" type="button">
-                    Upload Photo
-                  </Button>
+                  <p className="text-gray-600 text-sm">Photo upload coming soon</p>
                 </div>
               </div>
 
               {/* Title */}
               <div>
-                <Label htmlFor="title">Problem Title</Label>
+                <Label htmlFor="title">Problem Title *</Label>
                 <Input
                   id="title"
                   placeholder="e.g., Broken street lights on MG Road"
                   value={problemData.title}
                   onChange={(e) => setProblemData({...problemData, title: e.target.value})}
                   required
+                  disabled={loading}
                 />
               </div>
 
               {/* Description */}
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Describe the problem in detail. Include impact on community, urgency, and any relevant context..."
@@ -117,27 +140,25 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
                   onChange={(e) => setProblemData({...problemData, description: e.target.value})}
                   rows={4}
                   required
+                  disabled={loading}
                 />
               </div>
 
               {/* Location */}
               <div>
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">Location *</Label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                   <Input
                     id="location"
-                    placeholder="Enter location or use current location"
+                    placeholder="Enter specific location"
                     value={problemData.location}
                     onChange={(e) => setProblemData({...problemData, location: e.target.value})}
                     className="pl-10"
                     required
+                    disabled={loading}
                   />
                 </div>
-                <Button variant="outline" size="sm" className="mt-2" type="button">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Use Current Location
-                </Button>
               </div>
 
               {/* Tags */}
@@ -152,7 +173,7 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
                           key={tag} 
                           variant="default"
                           className="bg-ncc-navy cursor-pointer"
-                          onClick={() => removeTag(tag)}
+                          onClick={() => !loading && removeTag(tag)}
                         >
                           {tag} ×
                         </Badge>
@@ -169,7 +190,7 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
                           key={tag}
                           variant="outline"
                           className="cursor-pointer hover:bg-gray-100"
-                          onClick={() => addTag(tag)}
+                          onClick={() => !loading && addTag(tag)}
                         >
                           {tag}
                         </Badge>
@@ -184,8 +205,14 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTag())}
+                      disabled={loading}
                     />
-                    <Button type="button" onClick={addCustomTag} size="sm">
+                    <Button 
+                      type="button" 
+                      onClick={addCustomTag} 
+                      size="sm"
+                      disabled={loading}
+                    >
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
@@ -198,11 +225,12 @@ const PostProblem = ({ onSubmit, onBack }: PostProblemProps) => {
                   type="submit" 
                   className="w-full bg-ncc-navy hover:bg-blue-800"
                   size="lg"
+                  disabled={loading}
                 >
-                  Post Problem & Start Mission
+                  {loading ? 'Creating Mission...' : 'Submit Problem for Review'}
                 </Button>
                 <p className="text-xs text-gray-500 text-center mt-2">
-                  This will create a new mission for other cadets to join
+                  Your submission will be reviewed by ANO officers
                 </p>
               </div>
             </form>

@@ -9,7 +9,105 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      problems: {
+        Row: {
+          approval_feedback: string | null
+          approved_by: string | null
+          created_at: string | null
+          description: string
+          id: string
+          location: string
+          posted_by: string | null
+          priority: Database["public"]["Enums"]["problem_priority"] | null
+          status: Database["public"]["Enums"]["problem_status"] | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          approval_feedback?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          location: string
+          posted_by?: string | null
+          priority?: Database["public"]["Enums"]["problem_priority"] | null
+          status?: Database["public"]["Enums"]["problem_status"] | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          approval_feedback?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          location?: string
+          posted_by?: string | null
+          priority?: Database["public"]["Enums"]["problem_priority"] | null
+          status?: Database["public"]["Enums"]["problem_status"] | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problems_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "problems_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          directorate: string | null
+          email: string
+          full_name: string
+          id: string
+          institute: string | null
+          rank: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          unit_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          directorate?: string | null
+          email: string
+          full_name: string
+          id: string
+          institute?: string | null
+          rank?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          unit_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          directorate?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          institute?: string | null
+          rank?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          unit_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +116,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      problem_priority: "low" | "medium" | "high"
+      problem_status: "pending" | "approved" | "rejected"
+      user_role: "cadet" | "ano"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +233,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      problem_priority: ["low", "medium", "high"],
+      problem_status: ["pending", "approved", "rejected"],
+      user_role: ["cadet", "ano"],
+    },
   },
 } as const
