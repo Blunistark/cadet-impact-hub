@@ -32,7 +32,7 @@ export const useProblems = () => {
       .from('problems')
       .select(`
         *,
-        profiles:posted_by (
+        profiles!posted_by (
           full_name,
           rank
         )
@@ -45,9 +45,33 @@ export const useProblems = () => {
     }
 
     const { data, error } = await query;
+    console.log('Problems query result:', { data, error });
 
     if (!error && data) {
-      setProblems(data);
+      // Transform the data to match our Problem interface
+      const transformedProblems: Problem[] = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        location: item.location,
+        tags: item.tags || [],
+        status: item.status,
+        priority: item.priority,
+        posted_by: item.posted_by,
+        approved_by: item.approved_by,
+        approval_feedback: item.approval_feedback,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        profiles: item.profiles ? {
+          full_name: item.profiles.full_name || 'Unknown User',
+          rank: item.profiles.rank
+        } : undefined
+      }));
+      
+      setProblems(transformedProblems);
+    } else if (error) {
+      console.error('Error fetching problems:', error);
+      setProblems([]);
     }
     setLoading(false);
   };
@@ -64,6 +88,7 @@ export const useProblems = () => {
           schema: 'public',
           table: 'problems'
         }, () => {
+          console.log('Problems table changed, refetching...');
           fetchProblems();
         })
         .subscribe();
@@ -86,6 +111,10 @@ export const useProblems = () => {
       .select()
       .single();
 
+    if (error) {
+      console.error('Error creating problem:', error);
+    }
+
     return { data, error };
   };
 
@@ -105,6 +134,10 @@ export const useProblems = () => {
       .eq('id', problemId)
       .select()
       .single();
+
+    if (error) {
+      console.error('Error updating problem status:', error);
+    }
 
     return { data, error };
   };
