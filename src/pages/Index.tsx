@@ -1,18 +1,38 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import WelcomeScreen from '@/components/WelcomeScreen';
 import AuthForm from '@/components/AuthForm';
 import HomeFeed from '@/components/HomeFeed';
 import PostProblem from '@/components/PostProblem';
 import Profile from '@/components/Profile';
 import MapView from '@/components/MapView';
-import { useToast } from '@/hooks/use-toast';
+import ANODashboard from '@/components/ANODashboard';
+import CODashboard from '@/components/CODashboard';
 
-type AppState = 'welcome' | 'login' | 'register' | 'home' | 'post' | 'profile' | 'map';
+type AppState = 'welcome' | 'login' | 'register' | 'home' | 'post' | 'profile' | 'map' | 'ano-dashboard' | 'co-dashboard';
 
 const Index = () => {
   const [currentState, setCurrentState] = useState<AppState>('welcome');
-  const { toast } = useToast();
+  const { user, profile, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      if (user && profile) {
+        // Redirect authenticated users to appropriate dashboard
+        if (profile.role === 'ano') {
+          setCurrentState('ano-dashboard');
+        } else if (profile.role === 'co') {
+          setCurrentState('co-dashboard');
+        } else {
+          setCurrentState('home');
+        }
+      } else {
+        // Show welcome screen for unauthenticated users
+        setCurrentState('welcome');
+      }
+    }
+  }, [user, profile, loading]);
 
   const handleLogin = () => {
     setCurrentState('login');
@@ -22,34 +42,8 @@ const Index = () => {
     setCurrentState('register');
   };
 
-  const handleAuthSubmit = (data: any) => {
-    console.log('Auth data:', data);
-    toast({
-      title: currentState === 'login' ? 'Welcome back!' : 'Registration successful!',
-      description: 'You are now part of UDAAN NCC.',
-    });
-    setCurrentState('home');
-  };
-
   const handlePostProblem = () => {
     setCurrentState('post');
-  };
-
-  const handlePostSubmit = (problemData: any) => {
-    console.log('Problem posted:', problemData);
-    toast({
-      title: 'Mission Created!',
-      description: 'Your problem has been posted and a new mission is now active.',
-    });
-    setCurrentState('home');
-  };
-
-  const handleViewProblem = (problem: any) => {
-    console.log('Viewing problem:', problem);
-    toast({
-      title: 'Joined Mission!',
-      description: `You have joined the mission: ${problem.title}`,
-    });
   };
 
   const handleProfile = () => {
@@ -63,10 +57,26 @@ const Index = () => {
   const handleBack = () => {
     if (currentState === 'login' || currentState === 'register') {
       setCurrentState('welcome');
+    } else if (currentState === 'ano-dashboard' || currentState === 'co-dashboard') {
+      setCurrentState('welcome');
     } else {
-      setCurrentState('home');
+      if (profile?.role === 'ano') {
+        setCurrentState('ano-dashboard');
+      } else if (profile?.role === 'co') {
+        setCurrentState('co-dashboard');
+      } else {
+        setCurrentState('home');
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-ncc-navy to-blue-700 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   const renderCurrentScreen = () => {
     switch (currentState) {
@@ -81,7 +91,6 @@ const Index = () => {
         return (
           <AuthForm 
             mode="login"
-            onSubmit={handleAuthSubmit}
             onBack={handleBack}
           />
         );
@@ -89,15 +98,24 @@ const Index = () => {
         return (
           <AuthForm 
             mode="register"
-            onSubmit={handleAuthSubmit}
             onBack={handleBack}
           />
         );
+      case 'ano-dashboard':
+        return (
+          <ANODashboard 
+            onBack={() => setCurrentState('welcome')} 
+            onPostProblem={() => setCurrentState('post')}
+            onProfile={() => setCurrentState('profile')}
+            onMapView={() => setCurrentState('map')}
+          />
+        );
+      case 'co-dashboard':
+        return <CODashboard onBack={() => setCurrentState('welcome')} />;
       case 'home':
         return (
           <HomeFeed 
             onPostProblem={handlePostProblem}
-            onViewProblem={handleViewProblem}
             onProfile={handleProfile}
             onMapView={handleMapView}
           />
@@ -105,7 +123,6 @@ const Index = () => {
       case 'post':
         return (
           <PostProblem 
-            onSubmit={handlePostSubmit}
             onBack={handleBack}
           />
         );

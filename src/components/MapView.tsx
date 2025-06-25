@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +21,7 @@ const MapView = ({ onBack }: MapViewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   const mockProblems: Problem[] = [
     {
@@ -51,50 +51,110 @@ const MapView = ({ onBack }: MapViewProps) => {
   ];
 
   useEffect(() => {
-    if (mapRef.current && !mapInstance.current) {
-      // Initialize Leaflet map
+    let leafletLoaded = false;
+    
+    const initializeMap = () => {
+      if (!mapRef.current || mapInstance.current || !leafletLoaded) return;
+      
       const L = (window as any).L;
-      mapInstance.current = L.map(mapRef.current).setView([12.9716, 77.5946], 13);
+      if (!L || !L.map) return;
 
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(mapInstance.current);
+      try {
+        // Create map instance
+        mapInstance.current = L.map(mapRef.current, {
+          center: [12.9716, 77.5946],
+          zoom: 13,
+          zoomControl: true
+        });
 
-      // Add markers for problems
-      mockProblems.forEach((problem) => {
-        const markerColor = problem.status === 'active' ? 'green' : 
-                           problem.status === 'in-progress' ? 'orange' : 'blue';
-        
-        const marker = L.marker(problem.coordinates).addTo(mapInstance.current);
-        marker.bindPopup(`
-          <div style="min-width: 200px;">
-            <h3 style="margin: 0 0 8px 0; font-weight: bold;">${problem.title}</h3>
-            <p style="margin: 0 0 8px 0; color: #666;">${problem.location}</p>
-            <div style="margin-bottom: 8px;">
-              <span style="background: ${markerColor}; color: white; padding: 2px 6px; border-radius: 12px; font-size: 12px;">
-                ${problem.status}
-              </span>
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(mapInstance.current);
+
+        // Add markers
+        mockProblems.forEach((problem) => {
+          const marker = L.marker(problem.coordinates).addTo(mapInstance.current);
+          
+          const popupContent = `
+            <div style="min-width: 200px; font-family: system-ui;">
+              <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 14px;">${problem.title}</h3>
+              <p style="margin: 0 0 8px 0; color: #666; font-size: 12px;">${problem.location}</p>
+              <div style="margin-bottom: 8px;">
+                <span style="background: ${problem.status === 'active' ? '#22c55e' : problem.status === 'in-progress' ? '#f59e0b' : '#3b82f6'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: capitalize;">
+                  ${problem.status.replace('-', ' ')}
+                </span>
+              </div>
+              <button onclick="window.selectProblem('${problem.id}')" 
+                      style="background: #1e40af; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; width: 100%;">
+                View Details
+              </button>
             </div>
-            <button onclick="selectProblem('${problem.id}')" 
-                    style="background: #1e3a8a; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
-              View Details
-            </button>
-          </div>
-        `);
-      });
+          `;
+          
+          marker.bindPopup(popupContent, {
+            maxWidth: 250,
+            className: 'custom-popup'
+          });
+        });
 
-      // Make selectProblem available globally for popup buttons
-      (window as any).selectProblem = (id: string) => {
-        const problem = mockProblems.find(p => p.id === id);
-        setSelectedProblem(problem || null);
+        // Global function for popup buttons
+        (window as any).selectProblem = (id: string) => {
+          const problem = mockProblems.find(p => p.id === id);
+          setSelectedProblem(problem || null);
+        };
+
+        setMapLoaded(true);
+        console.log('Map initialized successfully');
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    };
+
+    const loadLeaflet = () => {
+      if ((window as any).L) {
+        leafletLoaded = true;
+        initializeMap();
+        return;
+      }
+
+      // Add CSS
+      const cssLink = document.createElement('link');
+      cssLink.rel = 'stylesheet';
+      cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      cssLink.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+      cssLink.crossOrigin = '';
+      document.head.appendChild(cssLink);
+
+      // Add JS
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+      script.crossOrigin = '';
+      
+      script.onload = () => {
+        leafletLoaded = true;
+        setTimeout(initializeMap, 100); // Small delay to ensure DOM is ready
       };
-    }
+      
+      script.onerror = (error) => {
+        console.error('Failed to load Leaflet:', error);
+      };
+      
+      document.head.appendChild(script);
+    };
+
+    loadLeaflet();
 
     return () => {
       if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
+        try {
+          mapInstance.current.remove();
+          mapInstance.current = null;
+        } catch (error) {
+          console.error('Error cleaning up map:', error);
+        }
       }
     };
   }, []);
@@ -103,6 +163,31 @@ const MapView = ({ onBack }: MapViewProps) => {
     const [lat, lng] = coordinates;
     const url = `https://www.google.com/maps?q=${lat},${lng}`;
     window.open(url, '_blank');
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        if (mapInstance.current && (window as any).L) {
+          const L = (window as any).L;
+          mapInstance.current.setView([latitude, longitude], 15);
+          L.marker([latitude, longitude])
+            .addTo(mapInstance.current)
+            .bindPopup('Your Location')
+            .openPopup();
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert('Unable to get your location. Please check your location settings.');
+      }
+    );
   };
 
   const getStatusColor = (status: string) => {
@@ -117,7 +202,7 @@ const MapView = ({ onBack }: MapViewProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-ncc text-white p-4">
+      <div className="bg-gradient-to-r from-ncc-navy to-blue-700 text-white p-4">
         <div className="flex items-center mb-2">
           <Button 
             variant="ghost" 
@@ -136,33 +221,46 @@ const MapView = ({ onBack }: MapViewProps) => {
       <div className="relative">
         <div 
           ref={mapRef}
-          className="w-full h-96 bg-gray-200"
-          style={{ minHeight: '400px' }}
+          className="w-full bg-gray-200"
+          style={{ height: '400px' }}
         />
         
-        {/* Current Location Button */}
-        <Button
-          size="sm"
-          className="absolute bottom-4 right-4 bg-white text-ncc-navy border shadow-lg hover:bg-gray-50"
-          onClick={() => {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition((position) => {
-                const { latitude, longitude } = position.coords;
-                if (mapInstance.current) {
-                  const L = (window as any).L;
-                  mapInstance.current.setView([latitude, longitude], 15);
-                  L.marker([latitude, longitude])
-                    .addTo(mapInstance.current)
-                    .bindPopup('Your Location')
-                    .openPopup();
-                }
-              });
-            }
-          }}
-        >
-          <Navigation className="w-4 h-4 mr-1" />
-          My Location
-        </Button>
+        {!mapLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ncc-navy mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading map...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+          <Button
+            size="sm"
+            className="bg-white text-ncc-navy border shadow-lg hover:bg-gray-50"
+            onClick={getCurrentLocation}
+          >
+            <Navigation className="w-4 h-4 mr-1" />
+            My Location
+          </Button>
+          
+          <Button
+            size="sm"
+            className="bg-ncc-green text-white shadow-lg hover:bg-green-700"
+            onClick={() => {
+              const center = mapInstance.current?.getCenter();
+              if (center) {
+                openInGoogleMaps([center.lat, center.lng]);
+              } else {
+                openInGoogleMaps([12.9716, 77.5946]);
+              }
+            }}
+          >
+            <ExternalLink className="w-4 h-4 mr-1" />
+            Google Maps
+          </Button>
+        </div>
       </div>
 
       {/* Problem Details Modal */}
@@ -191,17 +289,8 @@ const MapView = ({ onBack }: MapViewProps) => {
             <CardContent>
               <div className="flex items-center justify-between mb-4">
                 <Badge className={getStatusColor(selectedProblem.status)}>
-                  {selectedProblem.status}
+                  {selectedProblem.status.replace('-', ' ')}
                 </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openInGoogleMaps(selectedProblem.coordinates)}
-                  className="text-xs"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  Open in Google Maps
-                </Button>
               </div>
               
               <div className="flex flex-wrap gap-1 mb-4">
@@ -213,7 +302,14 @@ const MapView = ({ onBack }: MapViewProps) => {
               </div>
 
               <div className="space-y-2">
-                <Button className="w-full bg-ncc-navy hover:bg-blue-800">
+                <Button 
+                  className="w-full bg-ncc-navy hover:bg-blue-800"
+                  onClick={() => openInGoogleMaps(selectedProblem.coordinates)}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open in Google Maps
+                </Button>
+                <Button className="w-full bg-ncc-green hover:bg-green-700 text-white">
                   Join Mission
                 </Button>
                 <Button 
